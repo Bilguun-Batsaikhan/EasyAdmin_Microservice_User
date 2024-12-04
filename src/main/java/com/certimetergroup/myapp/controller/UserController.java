@@ -1,0 +1,98 @@
+package com.certimetergroup.myapp.controller;
+
+import com.certimetergroup.myapp.dto.UserDTO;
+import com.certimetergroup.myapp.dto.UserResPagination;
+import com.certimetergroup.myapp.enumeration.ResponseEnum;
+import com.certimetergroup.myapp.enumeration.UserRoleEnum;
+import com.certimetergroup.myapp.exception.FailureException;
+import com.certimetergroup.myapp.requestcontext.RequestContext;
+import com.certimetergroup.myapp.resourcemodel.User;
+import com.certimetergroup.myapp.service.AuthorizationService;
+import com.certimetergroup.myapp.service.UserMapper;
+import com.certimetergroup.myapp.service.UserService;
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/")
+public class UserController {
+    private final UserService userService;
+    private final UserMapper userMapper;
+    private final AuthorizationService authorizationService;
+    private final RequestContext requestContext;
+
+    public UserController(UserService userService, UserMapper userMapper, AuthorizationService authorizationService, RequestContext requestContext) {
+        this.userService = userService;
+        this.userMapper = userMapper;
+        this.authorizationService = authorizationService;
+        this.requestContext = requestContext;
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<UserResPagination> getUsers(@RequestParam Optional<Integer> age,
+                                                      @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
+                                                      @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
+        return new ResponseEntity<>(userService.getUsers(age, pageNo, pageSize), HttpStatus.OK);
+    }
+
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserDTO> getUserById(@Valid @PathVariable Long id) {
+        User user = userService.getUserById(id);
+        if (user == null) throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        return ResponseEntity.ok(userMapper.userToUserDto(user));
+    }
+
+    @PostMapping("/users")
+    public ResponseEntity<String> addUser(@Valid @RequestBody User user, @RequestHeader("Authorization") String accessToken) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+        boolean userAdded = userService.addUser(user);
+        if (!userAdded) throw new FailureException(ResponseEnum.USERNAME_ALREADY_EXISTS);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseEnum.CREATED.getDescription());
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<String> replaceUser(@Valid @RequestBody User user, @PathVariable Long id, @RequestHeader("Authorization") String accessToken) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+
+        boolean userReplaced = userService.replaceUser(user, id);
+        if (!userReplaced) throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        return ResponseEntity.ok("User replaced successfully.");
+    }
+
+    @PatchMapping("/users/{id}")
+    public ResponseEntity<String> updateUser(@Valid @PathVariable Long id, @RequestBody Map<String, Object> updates, @RequestHeader("Authorization") String accessToken) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+        boolean userUpdated = userService.updateUser(id, updates);
+        if (!userUpdated) throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        return ResponseEntity.ok("User updated successfully.");
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<String> removeUser(@Valid @PathVariable Long id, @RequestHeader("Authorization") String accessToken) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+
+        boolean userRemoved = userService.removeUser(id);
+        if (!userRemoved) throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        return ResponseEntity.ok("User removed successfully.");
+
+    }
+}
