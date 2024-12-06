@@ -38,7 +38,11 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<UserResPagination> getUsers(@RequestParam Optional<Integer> age,
                                                       @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
-                                                      @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
+                                                      @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize, @RequestHeader("Authorization") String accessToken) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
         return new ResponseEntity<>(userService.getUsers(age, pageNo, pageSize), HttpStatus.OK);
     }
 
