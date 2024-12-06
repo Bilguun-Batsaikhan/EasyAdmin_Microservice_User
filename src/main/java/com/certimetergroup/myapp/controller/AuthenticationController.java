@@ -26,7 +26,6 @@ public class AuthenticationController {
         this.userMapper = userMapper;
     }
 
-
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> loginReq(@RequestBody LoginRequest loginRequest) {
         User user = userService.getUserByLoginInfo(loginRequest);
@@ -36,8 +35,8 @@ public class AuthenticationController {
 
         String accessToken = jwtService.generateAccessToken(user, uuid);
         String refreshToken = jwtService.generateRefreshToken(user, uuid);
-        UserDTO userDTO = userMapper.userToUserDto(user);
-        return ResponseEntity.ok(new LoginResponse(userDTO, accessToken, refreshToken));
+        
+        return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken));
     }
 
 
