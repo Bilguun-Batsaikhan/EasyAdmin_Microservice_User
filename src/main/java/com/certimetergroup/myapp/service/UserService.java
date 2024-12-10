@@ -12,6 +12,7 @@ import com.certimetergroup.myapp.enumeration.UserFieldNameUpdateEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -82,7 +83,23 @@ public class UserService {
         if (userRepository.existsById(user.getId())) {
             return false;
         }
+
+        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+        user.setPassword(hashedPassword);
+
         userRepository.save(user);
+        return true;
+    }
+
+    public boolean addUsers(List<User> users) {
+        for (User user : users) {
+            if (userRepository.existsByUsername(user.getUsername())) {
+                continue; // Skip this user if the username already exists
+            }
+            String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+            user.setPassword(hashedPassword);
+            userRepository.save(user);
+        }
         return true;
     }
 
@@ -155,12 +172,23 @@ public class UserService {
         String username = loginRequest.getUsername();
         String email = loginRequest.getEmail();
         String password = loginRequest.getPassword();
+
         User user = null;
         if (username != null) {
-            user = userRepository.findUserByUsernameAndPassword(username, password);
-        } else {
-            user = userRepository.findUserByEmailAndPassword(email, password);
+            user = userRepository.findUserByUsername(username);
+        } else if (email != null) {
+            user = userRepository.findUserByEmail(email);
         }
+
+        if (user == null) {
+            throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        }
+
+        // Compare the hashed password
+        if (!BCrypt.checkpw(password, user.getPassword())) {
+            throw new FailureException(ResponseEnum.AUTHENTICATION_FAILED);
+        }
+
         return user;
     }
 }
