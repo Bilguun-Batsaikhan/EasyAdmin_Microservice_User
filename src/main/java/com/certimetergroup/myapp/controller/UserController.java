@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,7 +39,7 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<UserResPagination> getUsers(@RequestParam Optional<Integer> age,
                                                       @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
-                                                      @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize, @RequestHeader("Authorization") String accessToken) {
+                                                      @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
@@ -54,7 +55,7 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<String> addUser(@Valid @RequestBody User user, @RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<String> addUser(@Valid @RequestBody User user) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
@@ -64,8 +65,19 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseEnum.CREATED.getDescription());
     }
 
+    @PostMapping("/users/batch")
+    public ResponseEntity<String> addUsers(@Valid @RequestBody List<User> users) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+        boolean usersAdded = userService.addUsers(users);
+        if (!usersAdded) throw new FailureException(ResponseEnum.USERNAME_ALREADY_EXISTS);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Users added successfully.");
+    }
+
     @PutMapping("/users/{id}")
-    public ResponseEntity<String> replaceUser(@Valid @RequestBody User user, @PathVariable Long id, @RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<String> replaceUser(@Valid @RequestBody User user, @PathVariable Long id) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
@@ -77,7 +89,7 @@ public class UserController {
     }
 
     @PatchMapping("/users/{id}")
-    public ResponseEntity<String> updateUser(@Valid @PathVariable Long id, @RequestBody Map<String, Object> updates, @RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<String> updateUser(@Valid @PathVariable Long id, @RequestBody Map<String, Object> updates) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
@@ -88,7 +100,7 @@ public class UserController {
     }
 
     @DeleteMapping("/users/{id}")
-    public ResponseEntity<String> removeUser(@Valid @PathVariable Long id, @RequestHeader("Authorization") String accessToken) {
+    public ResponseEntity<String> removeUser(@Valid @PathVariable Long id) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
