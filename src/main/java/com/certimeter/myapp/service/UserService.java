@@ -8,11 +8,13 @@ import com.certimeter.myapp.enumeration.ResponseEnum;
 import com.certimeter.myapp.enumeration.UserRoleEnum;
 import com.certimeter.myapp.exception.FailureException;
 import com.certimeter.myapp.repository.jpa.UserRepository;
+import com.certimeter.myapp.repository.jpa.UserSpecification;
 import com.certimeter.myapp.resourcemodel.User;
 import com.certimeter.myapp.enumeration.UserFieldNameUpdateEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -55,52 +57,92 @@ public class UserService {
         }
     }
 
-    public UserResPagination getUsers(Optional<String> username, Optional<String> matchModeStr, int pageNo, int pageSize) {
+    public UserResPagination getUsers(
+            Optional<String> username, Optional<String> usernameMatchModeStr,
+            Optional<String> firstname, Optional<String> firstnameMatchModeStr,
+            Optional<String> surname, Optional<String> surnameMatchModeStr,
+            Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
+            Optional<String> email, Optional<String> emailMatchModeStr,
+            Optional<String> role, Optional<String> roleMatchModeStr,
+            int pageNo, int pageSize) {
+
         Pageable pageable = PageRequest.of(pageNo, pageSize);
-        Page<User> pagedUsers;
+        Specification<User> spec = buildUserSpecifications(
+                username, usernameMatchModeStr,
+                firstname, firstnameMatchModeStr,
+                surname, surnameMatchModeStr,
+                phoneNumber, phoneNumberMatchModeStr,
+                email, emailMatchModeStr,
+                role, roleMatchModeStr
+        );
 
-        if (username.isPresent() && matchModeStr.isPresent()) {
-            String usernameValue = username.get();
+        Page<User> pagedUsers = userRepository.findAll(spec, pageable);
+        List<UserDTO> usersDTO = userMapper.usersToUserDtos(pagedUsers.getContent());
+
+        return buildUserResPagination(pagedUsers, usersDTO);
+    }
+
+    private Specification<User> buildUserSpecifications(
+            Optional<String> username, Optional<String> usernameMatchModeStr,
+            Optional<String> firstname, Optional<String> firstnameMatchModeStr,
+            Optional<String> surname, Optional<String> surnameMatchModeStr,
+            Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
+            Optional<String> email, Optional<String> emailMatchModeStr,
+            Optional<String> role, Optional<String> roleMatchModeStr) {
+
+        Specification<User> spec = Specification.where(null);
+
+        spec = addSpecification(spec, "username", username, usernameMatchModeStr);
+        spec = addSpecification(spec, "firstname", firstname, firstnameMatchModeStr);
+        spec = addSpecification(spec, "surname", surname, surnameMatchModeStr);
+        spec = addSpecification(spec, "phoneNumber", phoneNumber, phoneNumberMatchModeStr);
+        spec = addSpecification(spec, "email", email, emailMatchModeStr);
+        spec = addSpecification(spec, "role", role, roleMatchModeStr);
+
+        return spec;
+    }
+
+    private Specification<User> addSpecification(
+            Specification<User> spec, String field, Optional<String> value, Optional<String> matchModeStr) {
+
+        if (value.isPresent() && matchModeStr.isPresent()) {
             MatchMode matchMode = getMatchModeFromString(matchModeStr.get());
-            pagedUsers = filterUsersByMatchMode(usernameValue, matchMode, pageable);
-        } else {
-            pagedUsers = userRepository.findAll(pageable);
+            return spec.and(UserSpecification.matchMode(field, value.get(), matchMode));
         }
+        return spec;
+    }
 
-        List<User> users = pagedUsers.getContent();
-        List<UserDTO> usersDTO = userMapper.usersToUserDtos(users);
-
-        UserResPagination userResPagination = new UserResPagination();
-        userResPagination.setPageNo(pagedUsers.getNumber());
-        userResPagination.setPageSize(pagedUsers.getSize());
-        userResPagination.setTotalElements(pagedUsers.getTotalElements());
-        userResPagination.setTotalPages(pagedUsers.getTotalPages());
-        userResPagination.setLast(pagedUsers.isLast());
-        userResPagination.setData(usersDTO);
-
-        return userResPagination;
+    private UserResPagination buildUserResPagination(Page<User> pagedUsers, List<UserDTO> usersDTO) {
+        return UserResPagination.builder()
+                .pageNo(pagedUsers.getNumber())
+                .pageSize(pagedUsers.getSize())
+                .totalElements(pagedUsers.getTotalElements())
+                .totalPages(pagedUsers.getTotalPages())
+                .last(pagedUsers.isLast())
+                .data(usersDTO)
+                .build();
     }
 
 
-    private Page<User> filterUsersByMatchMode(String username, MatchMode matchMode, Pageable pageable) {
-        switch (matchMode) {
-            case STARTS_WITH:
-                return userRepository.findByUsernameStartingWith(username, pageable);
-            case CONTAINS:
-                return userRepository.findByUsernameContaining(username, pageable);
-            case NOT_CONTAINS:
-                return userRepository.findByUsernameNotContaining(username, pageable);
-            case ENDS_WITH:
-                return userRepository.findByUsernameEndingWith(username, pageable);
-            case EQUALS:
-                return userRepository.findByUsername(username, pageable);
-            case NOT_EQUALS:
-                return userRepository.findByUsernameNot(username, pageable);
-            case NO_FILTER:
-            default:
-                return userRepository.findAll(pageable);
-        }
-    }
+//    private Page<User> filterUsersByMatchMode(String username, MatchMode matchMode, Pageable pageable) {
+//        switch (matchMode) {
+//            case STARTS_WITH:
+//                return userRepository.findByUsernameStartingWith(username, pageable);
+//            case CONTAINS:
+//                return userRepository.findByUsernameContaining(username, pageable);
+//            case NOT_CONTAINS:
+//                return userRepository.findByUsernameNotContaining(username, pageable);
+//            case ENDS_WITH:
+//                return userRepository.findByUsernameEndingWith(username, pageable);
+//            case EQUALS:
+//                return userRepository.findByUsername(username, pageable);
+//            case NOT_EQUALS:
+//                return userRepository.findByUsernameNot(username, pageable);
+//            case NO_FILTER:
+//            default:
+//                return userRepository.findAll(pageable);
+//        }
+//    }
 
     public User getUserById(Long id) {
         return userRepository.findUserById(id);

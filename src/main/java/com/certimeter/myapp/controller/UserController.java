@@ -39,14 +39,24 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<UserResPagination> getUsers(
             @RequestParam Optional<String> username,
-            @RequestParam Optional<String> matchMode,
+            @RequestParam Optional<String> usernameMatchMode,
+            @RequestParam Optional<String> firstname,
+            @RequestParam Optional<String> firstnameMatchMode,
+            @RequestParam Optional<String> surname,
+            @RequestParam Optional<String> surnameMatchMode,
+            @RequestParam Optional<String> phoneNumber,
+            @RequestParam Optional<String> phoneNumberMatchMode,
+            @RequestParam Optional<String> email,
+            @RequestParam Optional<String> emailMatchMode,
+            @RequestParam Optional<String> role,
+            @RequestParam Optional<String> roleMatchMode,
             @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
         }
-        return new ResponseEntity<>(userService.getUsers(username, matchMode, pageNo, pageSize), HttpStatus.OK);
+        return new ResponseEntity<>(userService.getUsers(username, usernameMatchMode, firstname, firstnameMatchMode, surname, surnameMatchMode, phoneNumber, phoneNumberMatchMode, email, emailMatchMode, role, roleMatchMode, pageNo, pageSize), HttpStatus.OK);
     }
 
     @GetMapping("/users/{id}")
