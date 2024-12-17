@@ -33,44 +33,27 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
-    public UserResPagination getUsers(Optional<Integer> age, int pageNo, int pageSize) {
-        Pageable pagebale = PageRequest.of(pageNo, pageSize);
-        Page<User> pagedUsers = userRepository.findAll(pagebale);
+    public UserResPagination getUsers(Optional<String> username, int pageNo, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Page<User> pagedUsers;
+
+        if (username.isPresent()) {
+            pagedUsers = userRepository.findByUsernameContaining(username.get(), pageable);
+        } else {
+            pagedUsers = userRepository.findAll(pageable);
+        }
+
         List<User> users = pagedUsers.getContent();
         List<UserDTO> usersDTO = userMapper.usersToUserDtos(users);
 
         UserResPagination userResPagination = new UserResPagination();
-
         userResPagination.setPageNo(pagedUsers.getNumber());
         userResPagination.setPageSize(pagedUsers.getSize());
         userResPagination.setTotalElements(pagedUsers.getTotalElements());
         userResPagination.setTotalPages(pagedUsers.getTotalPages());
         userResPagination.setLast(pagedUsers.isLast());
-
-        // https://www.omnicalculator.com/everyday-life/age-in-years#how-to-calculate-age
-        if (age.isPresent()) {
-            List<UserDTO> usersFilteredByAge = new ArrayList<>();
-            LocalDate currentDate = LocalDate.now();
-
-            int currentYear = currentDate.getYear();
-            int currentDay = currentDate.getDayOfMonth();
-            int currentMonth = currentDate.getMonthValue();
-            int ageToCompare;
-
-            for (UserDTO user : usersDTO) {
-                int yearDifference = currentYear - user.getBirthdate().getYear();
-                int monthDifference = currentMonth - user.getBirthdate().getMonthValue();
-                int dayDifference = currentDay - user.getBirthdate().getDayOfMonth();
-                int daysAlive = (yearDifference * 365) + (monthDifference * 31) + dayDifference;
-                ageToCompare = daysAlive / 365;
-                if (ageToCompare == age.get()) {
-                    usersFilteredByAge.add(user);
-                }
-            }
-            userResPagination.setData(usersFilteredByAge);
-            return userResPagination;
-        }
         userResPagination.setData(usersDTO);
+
         return userResPagination;
     }
 
