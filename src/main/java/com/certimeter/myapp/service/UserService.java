@@ -3,6 +3,7 @@ package com.certimeter.myapp.service;
 import com.certimeter.myapp.dto.LoginRequest;
 import com.certimeter.myapp.dto.UserDTO;
 import com.certimeter.myapp.dto.UserResPagination;
+import com.certimeter.myapp.enumeration.MatchMode;
 import com.certimeter.myapp.enumeration.ResponseEnum;
 import com.certimeter.myapp.enumeration.UserRoleEnum;
 import com.certimeter.myapp.exception.FailureException;
@@ -33,12 +34,35 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
-    public UserResPagination getUsers(Optional<String> username, int pageNo, int pageSize) {
+    private MatchMode getMatchModeFromString(String matchModeStr) {
+        switch (matchModeStr.toLowerCase()) {
+            case "startswith":
+                return MatchMode.STARTS_WITH;
+            case "contains":
+                return MatchMode.CONTAINS;
+            case "notcontains":
+                return MatchMode.NOT_CONTAINS;
+            case "endswith":
+                return MatchMode.ENDS_WITH;
+            case "equals":
+                return MatchMode.EQUALS;
+            case "notequals":
+                return MatchMode.NOT_EQUALS;
+            case "nofilter":
+                return MatchMode.NO_FILTER;
+            default:
+                throw new IllegalArgumentException("Invalid match mode: " + matchModeStr);
+        }
+    }
+
+    public UserResPagination getUsers(Optional<String> username, Optional<String> matchModeStr, int pageNo, int pageSize) {
         Pageable pageable = PageRequest.of(pageNo, pageSize);
         Page<User> pagedUsers;
 
-        if (username.isPresent()) {
-            pagedUsers = userRepository.findByUsernameContaining(username.get(), pageable);
+        if (username.isPresent() && matchModeStr.isPresent()) {
+            String usernameValue = username.get();
+            MatchMode matchMode = getMatchModeFromString(matchModeStr.get());
+            pagedUsers = filterUsersByMatchMode(usernameValue, matchMode, pageable);
         } else {
             pagedUsers = userRepository.findAll(pageable);
         }
@@ -55,6 +79,27 @@ public class UserService {
         userResPagination.setData(usersDTO);
 
         return userResPagination;
+    }
+
+
+    private Page<User> filterUsersByMatchMode(String username, MatchMode matchMode, Pageable pageable) {
+        switch (matchMode) {
+            case STARTS_WITH:
+                return userRepository.findByUsernameStartingWith(username, pageable);
+            case CONTAINS:
+                return userRepository.findByUsernameContaining(username, pageable);
+            case NOT_CONTAINS:
+                return userRepository.findByUsernameNotContaining(username, pageable);
+            case ENDS_WITH:
+                return userRepository.findByUsernameEndingWith(username, pageable);
+            case EQUALS:
+                return userRepository.findByUsername(username, pageable);
+            case NOT_EQUALS:
+                return userRepository.findByUsernameNot(username, pageable);
+            case NO_FILTER:
+            default:
+                return userRepository.findAll(pageable);
+        }
     }
 
     public User getUserById(Long id) {
