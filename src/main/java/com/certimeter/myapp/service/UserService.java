@@ -3,15 +3,18 @@ package com.certimeter.myapp.service;
 import com.certimeter.myapp.dto.LoginRequest;
 import com.certimeter.myapp.dto.UserDTO;
 import com.certimeter.myapp.dto.UserResPagination;
+import com.certimeter.myapp.enumeration.MatchMode;
 import com.certimeter.myapp.enumeration.ResponseEnum;
 import com.certimeter.myapp.enumeration.UserRoleEnum;
 import com.certimeter.myapp.exception.FailureException;
 import com.certimeter.myapp.repository.jpa.UserRepository;
+import com.certimeter.myapp.repository.jpa.UserSpecification;
 import com.certimeter.myapp.resourcemodel.User;
 import com.certimeter.myapp.enumeration.UserFieldNameUpdateEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -33,28 +36,101 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
-    public UserResPagination getUsers(Optional<String> username, int pageNo, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNo, pageSize);
-        Page<User> pagedUsers;
-
-        if (username.isPresent()) {
-            pagedUsers = userRepository.findByUsernameContaining(username.get(), pageable);
-        } else {
-            pagedUsers = userRepository.findAll(pageable);
+    private MatchMode getMatchModeFromString(String matchModeStr) {
+        switch (matchModeStr.toLowerCase()) {
+            case "startswith":
+                return MatchMode.STARTS_WITH;
+            case "contains":
+                return MatchMode.CONTAINS;
+            case "notcontains":
+                return MatchMode.NOT_CONTAINS;
+            case "endswith":
+                return MatchMode.ENDS_WITH;
+            case "equals":
+                return MatchMode.EQUALS;
+            case "notequals":
+                return MatchMode.NOT_EQUALS;
+            case "nofilter":
+                return MatchMode.NO_FILTER;
+            case "dateis":
+                return MatchMode.DATE_IS;
+            case "dateisnot":
+                return MatchMode.DATE_IS_NOT;
+            case "datebefore":
+                return MatchMode.DATE_BEFORE;
+            case "dateafter":
+                return MatchMode.DATE_AFTER;
+            default:
+                throw new IllegalArgumentException("Invalid match mode: " + matchModeStr);
         }
+    }
 
-        List<User> users = pagedUsers.getContent();
-        List<UserDTO> usersDTO = userMapper.usersToUserDtos(users);
+    public UserResPagination getUsers(
+            Optional<String> username, Optional<String> usernameMatchModeStr,
+            Optional<String> firstname, Optional<String> firstnameMatchModeStr,
+            Optional<String> surname, Optional<String> surnameMatchModeStr,
+            Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
+            Optional<String> email, Optional<String> emailMatchModeStr,
+            Optional<String> role, Optional<String> roleMatchModeStr, Optional<String> birthdate, Optional<String> birthdateMatchModeStr,
+            int pageNo, int pageSize) {
 
-        UserResPagination userResPagination = new UserResPagination();
-        userResPagination.setPageNo(pagedUsers.getNumber());
-        userResPagination.setPageSize(pagedUsers.getSize());
-        userResPagination.setTotalElements(pagedUsers.getTotalElements());
-        userResPagination.setTotalPages(pagedUsers.getTotalPages());
-        userResPagination.setLast(pagedUsers.isLast());
-        userResPagination.setData(usersDTO);
+        Pageable pageable = PageRequest.of(pageNo, pageSize);
+        Specification<User> spec = buildUserSpecifications(
+                username, usernameMatchModeStr,
+                firstname, firstnameMatchModeStr,
+                surname, surnameMatchModeStr,
+                phoneNumber, phoneNumberMatchModeStr,
+                email, emailMatchModeStr,
+                role, roleMatchModeStr,
+                birthdate, birthdateMatchModeStr
+        );
 
-        return userResPagination;
+        Page<User> pagedUsers = userRepository.findAll(spec, pageable);
+        List<UserDTO> usersDTO = userMapper.usersToUserDtos(pagedUsers.getContent());
+
+        return buildUserResPagination(pagedUsers, usersDTO);
+    }
+
+    private Specification<User> buildUserSpecifications(
+            Optional<String> username, Optional<String> usernameMatchModeStr,
+            Optional<String> firstname, Optional<String> firstnameMatchModeStr,
+            Optional<String> surname, Optional<String> surnameMatchModeStr,
+            Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
+            Optional<String> email, Optional<String> emailMatchModeStr,
+            Optional<String> role, Optional<String> roleMatchModeStr,
+            Optional<String> birthdate, Optional<String> birthdateMatchModeStr) {
+
+        Specification<User> spec = Specification.where(null);
+
+        spec = addSpecification(spec, "username", username, usernameMatchModeStr);
+        spec = addSpecification(spec, "firstname", firstname, firstnameMatchModeStr);
+        spec = addSpecification(spec, "surname", surname, surnameMatchModeStr);
+        spec = addSpecification(spec, "phoneNumber", phoneNumber, phoneNumberMatchModeStr);
+        spec = addSpecification(spec, "email", email, emailMatchModeStr);
+        spec = addSpecification(spec, "role", role, roleMatchModeStr);
+        spec = addSpecification(spec, "birthdate", birthdate, birthdateMatchModeStr);
+        return spec;
+    }
+
+    private Specification<User> addSpecification(
+            Specification<User> spec, String field, Optional<String> value, Optional<String> matchModeStr) {
+
+        if (value.isPresent() && matchModeStr.isPresent()) {
+            MatchMode matchMode = getMatchModeFromString(matchModeStr.get());
+            return spec.and(UserSpecification.matchMode(field, value.get(), matchMode));
+        }
+        return spec;
+    }
+
+    private UserResPagination buildUserResPagination(Page<User> pagedUsers, List<UserDTO> usersDTO) {
+        return UserResPagination.builder()
+                .pageNo(pagedUsers.getNumber())
+                .pageSize(pagedUsers.getSize())
+                .totalElements(pagedUsers.getTotalElements())
+                .totalPages(pagedUsers.getTotalPages())
+                .last(pagedUsers.isLast())
+                .data(usersDTO)
+                .build();
     }
 
     public User getUserById(Long id) {
