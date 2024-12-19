@@ -7,5 +7,5 @@ public enum MatchMode {
     ENDS_WITH,
     EQUALS,
     NOT_EQUALS,
-    NO_FILTER
+    DATE_BEFORE, DATE_AFTER, DATE_IS_NOT, DATE_IS, NO_FILTER
 }

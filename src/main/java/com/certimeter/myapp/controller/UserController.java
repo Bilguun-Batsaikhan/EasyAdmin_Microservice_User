@@ -50,13 +50,15 @@ public class UserController {
             @RequestParam Optional<String> emailMatchMode,
             @RequestParam Optional<String> role,
             @RequestParam Optional<String> roleMatchMode,
+            @RequestParam Optional<String> birthdate,
+            @RequestParam Optional<String> birthdateMatchMode,
             @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
         }
-        return new ResponseEntity<>(userService.getUsers(username, usernameMatchMode, firstname, firstnameMatchMode, surname, surnameMatchMode, phoneNumber, phoneNumberMatchMode, email, emailMatchMode, role, roleMatchMode, pageNo, pageSize), HttpStatus.OK);
+        return new ResponseEntity<>(userService.getUsers(username, usernameMatchMode, firstname, firstnameMatchMode, surname, surnameMatchMode, phoneNumber, phoneNumberMatchMode, email, emailMatchMode, role, roleMatchMode, birthdate, birthdateMatchMode, pageNo, pageSize), HttpStatus.OK);
     }
 
     @GetMapping("/users/{id}")

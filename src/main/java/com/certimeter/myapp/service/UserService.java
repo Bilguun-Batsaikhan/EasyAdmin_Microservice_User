@@ -52,6 +52,14 @@ public class UserService {
                 return MatchMode.NOT_EQUALS;
             case "nofilter":
                 return MatchMode.NO_FILTER;
+            case "dateis":
+                return MatchMode.DATE_IS;
+            case "dateisnot":
+                return MatchMode.DATE_IS_NOT;
+            case "datebefore":
+                return MatchMode.DATE_BEFORE;
+            case "dateafter":
+                return MatchMode.DATE_AFTER;
             default:
                 throw new IllegalArgumentException("Invalid match mode: " + matchModeStr);
         }
@@ -63,7 +71,7 @@ public class UserService {
             Optional<String> surname, Optional<String> surnameMatchModeStr,
             Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
             Optional<String> email, Optional<String> emailMatchModeStr,
-            Optional<String> role, Optional<String> roleMatchModeStr,
+            Optional<String> role, Optional<String> roleMatchModeStr, Optional<String> birthdate, Optional<String> birthdateMatchModeStr,
             int pageNo, int pageSize) {
 
         Pageable pageable = PageRequest.of(pageNo, pageSize);
@@ -73,7 +81,8 @@ public class UserService {
                 surname, surnameMatchModeStr,
                 phoneNumber, phoneNumberMatchModeStr,
                 email, emailMatchModeStr,
-                role, roleMatchModeStr
+                role, roleMatchModeStr,
+                birthdate, birthdateMatchModeStr
         );
 
         Page<User> pagedUsers = userRepository.findAll(spec, pageable);
@@ -88,7 +97,8 @@ public class UserService {
             Optional<String> surname, Optional<String> surnameMatchModeStr,
             Optional<String> phoneNumber, Optional<String> phoneNumberMatchModeStr,
             Optional<String> email, Optional<String> emailMatchModeStr,
-            Optional<String> role, Optional<String> roleMatchModeStr) {
+            Optional<String> role, Optional<String> roleMatchModeStr,
+            Optional<String> birthdate, Optional<String> birthdateMatchModeStr) {
 
         Specification<User> spec = Specification.where(null);
 
@@ -98,7 +108,7 @@ public class UserService {
         spec = addSpecification(spec, "phoneNumber", phoneNumber, phoneNumberMatchModeStr);
         spec = addSpecification(spec, "email", email, emailMatchModeStr);
         spec = addSpecification(spec, "role", role, roleMatchModeStr);
-
+        spec = addSpecification(spec, "birthdate", birthdate, birthdateMatchModeStr);
         return spec;
     }
 
@@ -122,27 +132,6 @@ public class UserService {
                 .data(usersDTO)
                 .build();
     }
-
-
-//    private Page<User> filterUsersByMatchMode(String username, MatchMode matchMode, Pageable pageable) {
-//        switch (matchMode) {
-//            case STARTS_WITH:
-//                return userRepository.findByUsernameStartingWith(username, pageable);
-//            case CONTAINS:
-//                return userRepository.findByUsernameContaining(username, pageable);
-//            case NOT_CONTAINS:
-//                return userRepository.findByUsernameNotContaining(username, pageable);
-//            case ENDS_WITH:
-//                return userRepository.findByUsernameEndingWith(username, pageable);
-//            case EQUALS:
-//                return userRepository.findByUsername(username, pageable);
-//            case NOT_EQUALS:
-//                return userRepository.findByUsernameNot(username, pageable);
-//            case NO_FILTER:
-//            default:
-//                return userRepository.findAll(pageable);
-//        }
-//    }
 
     public User getUserById(Long id) {
         return userRepository.findUserById(id);
