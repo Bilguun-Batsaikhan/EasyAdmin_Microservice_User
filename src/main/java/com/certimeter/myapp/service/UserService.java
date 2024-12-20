@@ -11,6 +11,7 @@ import com.certimeter.myapp.repository.jpa.UserRepository;
 import com.certimeter.myapp.repository.jpa.UserSpecification;
 import com.certimeter.myapp.resourcemodel.User;
 import com.certimeter.myapp.enumeration.UserFieldNameUpdateEnum;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -218,12 +219,18 @@ public class UserService {
         return false;
     }
 
+
     public boolean removeUser(Long id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
+        try {
+            if (userRepository.existsById(id)) {
+                userRepository.deleteById(id);
+                return true;
+            }
+            return false;
+        } catch (DataIntegrityViolationException e) {
+            // Handle the foreign key constraint violation
+            throw new FailureException(ResponseEnum.FOREIGN_KEY_CONSTRAINT_VIOLATION);
         }
-        return false;
     }
 
     public User getUserByLoginInfo(LoginRequest loginRequest) {
