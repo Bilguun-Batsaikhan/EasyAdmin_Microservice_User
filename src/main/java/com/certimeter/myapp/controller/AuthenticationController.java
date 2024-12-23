@@ -18,12 +18,10 @@ import java.util.UUID;
 public class AuthenticationController {
     private final UserService userService;
     private final JWTService jwtService;
-    private final UserMapper userMapper;
 
     public AuthenticationController(UserService userService, JWTService jwtService, UserMapper userMapper) {
         this.userService = userService;
         this.jwtService = jwtService;
-        this.userMapper = userMapper;
     }
 
     @PostMapping("/login")
@@ -35,7 +33,7 @@ public class AuthenticationController {
 
         String accessToken = jwtService.generateAccessToken(user, uuid);
         String refreshToken = jwtService.generateRefreshToken(user, uuid);
-        
+
         return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken));
     }
 

@@ -1,5 +1,6 @@
 package com.certimeter.myapp.enumeration;
 
+// This could be in a common shared library
 public enum MatchMode {
     STARTS_WITH,
     CONTAINS,

@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /*The UserSpecification class uses the Specification interface from Spring Data JPA to create dynamic queries based on different match modes. The matchMode method generates a Specification that can be used to build SQL queries dynamically.*/
+
+// This could be in a common shared library
 public class UserSpecification {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 

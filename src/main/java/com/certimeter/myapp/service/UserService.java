@@ -38,6 +38,7 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
+    // this could be in a common shared library
     private MatchMode getMatchModeFromString(String matchModeStr) {
         switch (matchModeStr.toLowerCase()) {
             case "startswith":
@@ -114,6 +115,7 @@ public class UserService {
         return spec;
     }
 
+    // This could be in a common shared library
     private Specification<User> addSpecification(
             Specification<User> spec, String field, Optional<String> value, Optional<String> matchModeStr) {
 
