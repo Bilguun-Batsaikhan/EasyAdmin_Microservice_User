@@ -21,7 +21,8 @@ public enum ResponseEnum {
     MALFORMED_ACCESS_TOKEN(401, "Malformed access token", HttpStatus.UNAUTHORIZED),
     MALFORMED_REFRESH_TOKEN(401, "Malformed refresh token", HttpStatus.UNAUTHORIZED),
     // HttpStatus codes will help to understand the error type for whoever is consuming the API, in my case it's the BFF layer server.
-    FOREIGN_KEY_CONSTRAINT_VIOLATION(1451, "Foreign key constraint violation", HttpStatus.CONFLICT);
+    FOREIGN_KEY_CONSTRAINT_VIOLATION(1451, "Foreign key constraint violation", HttpStatus.CONFLICT),
+    DUPLICATE_ENTRY(1062, "Duplicate entry", HttpStatus.CONFLICT);
 
     private final int id;
     private final String description;

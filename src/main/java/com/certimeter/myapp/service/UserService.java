@@ -11,6 +11,7 @@ import com.certimeter.myapp.repository.jpa.UserRepository;
 import com.certimeter.myapp.repository.jpa.UserSpecification;
 import com.certimeter.myapp.resourcemodel.User;
 import com.certimeter.myapp.enumeration.UserFieldNameUpdateEnum;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -139,15 +140,23 @@ public class UserService {
     }
 
     public boolean addUser(User user) {
-        if (userRepository.existsById(user.getId())) {
-            return false;
+        try {
+            if (userRepository.existsById(user.getId())) {
+                return false;
+            }
+
+            String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+            user.setPassword(hashedPassword);
+
+            userRepository.save(user);
+            return true;
+        } catch (DataIntegrityViolationException e) {
+            // Handle the duplicate entry exception
+            if (e.getCause() instanceof ConstraintViolationException) {
+                throw new FailureException(ResponseEnum.DUPLICATE_ENTRY);
+            }
+            throw e;
         }
-
-        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
-        user.setPassword(hashedPassword);
-
-        userRepository.save(user);
-        return true;
     }
 
     public boolean addUsers(List<User> users) {
