@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum UserFieldNameUpdateEnum {
     USERNAME("username"),
+    PASSWORD("password"),
     FIRSTNAME("firstname"),
     SURNAME("surname"),
     EMAIL("email"),

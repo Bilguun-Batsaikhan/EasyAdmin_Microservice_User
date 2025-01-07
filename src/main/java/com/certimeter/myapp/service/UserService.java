@@ -219,13 +219,25 @@ public class UserService {
                                 user.setRole(UserRoleEnum.valueOf(roleStr));
                             }
                             break;
+                        case PASSWORD:
+                            String hashedPassword = BCrypt.hashpw((String) value, BCrypt.gensalt());
+                            user.setPassword(hashedPassword);
+                            break;
                         default:
                             throw new FailureException(ResponseEnum.INVALID_INPUT);
                     }
                 }
             });
-            userRepository.save(user);
-            return true;
+            try {
+                userRepository.save(user);
+                return true;
+            } catch (DataIntegrityViolationException e) {
+                // Handle the duplicate entry exception
+                if (e.getCause() instanceof ConstraintViolationException) {
+                    throw new FailureException(ResponseEnum.DUPLICATE_ENTRY);
+                }
+                throw e;
+            }
         }
         return false;
     }
