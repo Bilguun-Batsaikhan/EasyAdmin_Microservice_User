@@ -38,6 +38,15 @@ public class UserService {
         this.userMapper = userMapper;
     }
 
+    public Map<Long, String> getUsernamesGivenIds(List<Long> userIds) {
+        List<User> users = userRepository.findAllById(userIds);
+        Map<Long, String> userIdToUsername = new HashMap<>();
+        for (User user : users) {
+            userIdToUsername.put(user.getId(), user.getUsername());
+        }
+        return userIdToUsername;
+    }
+
     // this could be in a common shared library
     private MatchMode getMatchModeFromString(String matchModeStr) {
         switch (matchModeStr.toLowerCase()) {
