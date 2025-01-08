@@ -16,7 +16,7 @@ public class UserDTO {
     private Long id;
     private String firstname;
     private String surname;
-    private String username;
+    private String username; //TODO: username should be unique
     private String phoneNumber;
     private String email;
     private UserRoleEnum role;

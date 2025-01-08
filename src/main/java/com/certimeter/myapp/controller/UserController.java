@@ -68,6 +68,7 @@ public class UserController {
         return ResponseEntity.ok(userMapper.userToUserDto(user));
     }
 
+    //TODO probably I don't need this endpoint, delete it if it's not used
     @PostMapping("/users/usernames")
     public Map<Long, String> getUsernamesGivenIds(@RequestBody List<Long> ids) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
