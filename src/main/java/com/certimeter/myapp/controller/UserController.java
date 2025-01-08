@@ -68,6 +68,15 @@ public class UserController {
         return ResponseEntity.ok(userMapper.userToUserDto(user));
     }
 
+    @PostMapping("/users/usernames")
+    public Map<Long, String> getUsernamesGivenIds(@RequestBody List<Long> ids) {
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
+            throw new FailureException(ResponseEnum.FORBIDDEN);
+        }
+        return userService.getUsernamesGivenIds(ids);
+    }
+
     @PostMapping("/users")
     public ResponseEntity<String> addUser(@Valid @RequestBody User user) {
         EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
@@ -123,6 +132,5 @@ public class UserController {
         boolean userRemoved = userService.removeUser(id);
         if (!userRemoved) throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
         return ResponseEntity.ok("User removed successfully.");
-
     }
 }
