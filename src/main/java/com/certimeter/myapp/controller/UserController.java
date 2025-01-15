@@ -54,7 +54,7 @@ public class UserController {
             @RequestParam Optional<String> birthdateMatchMode,
             @RequestParam(value = "page", defaultValue = "0", required = false) int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10", required = false) int pageSize) {
-        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN);
+        EnumSet<UserRoleEnum> authorizedRoles = EnumSet.of(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.SYSTEM_ADMIN);
         if (!authorizationService.isAuthorized(requestContext, authorizedRoles)) {
             throw new FailureException(ResponseEnum.FORBIDDEN);
         }
