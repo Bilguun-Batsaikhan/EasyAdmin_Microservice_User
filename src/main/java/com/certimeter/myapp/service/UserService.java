@@ -17,6 +17,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +34,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final JavaMailSender javaMailSender;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, JavaMailSender javaMailSender) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
+        this.javaMailSender = javaMailSender;
     }
 
     public Map<Long, String> getUsernamesGivenIds(List<Long> userIds) {
@@ -285,7 +289,38 @@ public class UserService {
         if (!BCrypt.checkpw(password, user.getPassword())) {
             throw new FailureException(ResponseEnum.AUTHENTICATION_FAILED);
         }
-
         return user;
+    }
+
+    public User findUserByEmail(String email) {
+        User user = userRepository.findUserByEmail(email);
+        if (user == null) {
+            throw new FailureException(ResponseEnum.RESOURCE_NOT_FOUND);
+        }
+        // Send an email with a link to reset the password
+        return user;
+    }
+
+    public boolean sendPasswordRecoveryEmail(String email, String accessToken) {
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+        mailMessage.setFrom("bilguun.ing@gmail.com");
+        mailMessage.setTo(email);
+        mailMessage.setSubject("Password recovery");
+        mailMessage.setText("Click the link to reset your password: http://localhost:4200/reset-password?token=" + accessToken);
+
+        javaMailSender.send(mailMessage);
+        return true;
+    }
+
+    public boolean updatePassword(Long userId, String newPassword) {
+        Optional<User> optionalUser = userRepository.findById(userId);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            user.setPassword(hashedPassword);
+            userRepository.save(user);
+            return true;
+        }
+        return false;
     }
 }

@@ -8,9 +8,14 @@ import com.certimeter.myapp.resourcemodel.User;
 import com.certimeter.myapp.service.JWTService;
 import com.certimeter.myapp.service.UserMapper;
 import com.certimeter.myapp.service.UserService;
+import jakarta.validation.Valid;
+import org.apache.commons.validator.routines.EmailValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +23,7 @@ import java.util.UUID;
 public class AuthenticationController {
     private final UserService userService;
     private final JWTService jwtService;
+    Logger LOG = LoggerFactory.getLogger(AuthenticationController.class);
 
     public AuthenticationController(UserService userService, JWTService jwtService, UserMapper userMapper) {
         this.userService = userService;
@@ -74,4 +80,37 @@ public class AuthenticationController {
         return ResponseEntity.ok(new RefreshResponse(newAccessToken, refreshToken));
     }
 
+    //{email: "email"}
+    @PostMapping("password/recover")
+    public ResponseEntity<String> passwordRecover(@Valid @RequestBody Map<String, String> email) {
+        String emailString = email.get("email");
+        if (!EmailValidator.getInstance().isValid(emailString)) {
+            throw new FailureException(ResponseEnum.INVALID_EMAIL);
+        }
+        User user = userService.findUserByEmail(emailString);
+
+        String uuid = UUID.randomUUID().toString();
+        String accessToken = jwtService.generateAccessToken(user, uuid);
+
+        if (!userService.sendPasswordRecoveryEmail(emailString, accessToken)) {
+            throw new FailureException(ResponseEnum.UNEXPECTED_ERROR);
+        }
+
+        return ResponseEntity.ok("Password recovery email sent successfully.");
+    }
+
+    @PatchMapping("password/reset")
+    public ResponseEntity<String> passwordReset(@RequestHeader("Authorization") String accessTokenb, @RequestBody Map<String, String> password) {
+        String accessToken = accessTokenb.substring(7);
+        String newPassword = password.get("password");
+
+        jwtService.validateAccessToken(accessToken);
+
+        Long idUser = jwtService.getClaimFromAccessToken(accessToken, "id_user", Long.class);
+        if (!userService.updatePassword(idUser, newPassword)) {
+            throw new FailureException(ResponseEnum.UNEXPECTED_ERROR);
+        }
+
+        return ResponseEntity.ok("Password updated successfully.");
+    }
 }

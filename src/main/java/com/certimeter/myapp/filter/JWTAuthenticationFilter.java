@@ -14,6 +14,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,7 +27,9 @@ import java.io.IOException;
 @Component
 @Order(1)
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
+    private static Logger LOG = LoggerFactory.getLogger(JWTAuthenticationFilter.class);
     private static final String LOGIN_PATH = "/auth/login";
+    private static final String PASSWORD_RESET_PATH = "/auth/password/recover";
 
     private final JWTService jwtService;
     private final UserService userService;
@@ -40,7 +44,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.equals(LOGIN_PATH) || path.equals("/bilguun.html") || path.equals("/swagger-ui/index.html");
+        return path.equals(LOGIN_PATH) || path.equals(PASSWORD_RESET_PATH);
     }
 
 
