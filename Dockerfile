@@ -1,13 +1,29 @@
-# Use an official Java runtime as a parent image
-FROM eclipse-temurin:17-jdk
+# Use a multi-stage build
+FROM eclipse-temurin:17-jdk AS build
 
-# Set the working directory inside the container
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy the JAR file into the container
-COPY target/*.jar app.jar
+# Copy Maven wrapper and project files
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+COPY src src
 
-# Expose the port your app runs on
+# Grant permission to execute Maven wrapper
+RUN chmod +x mvnw
+
+# Build the application (creates the JAR file)
+RUN ./mvnw clean package -DskipTests
+
+# Use a new image for running the application
+FROM eclipse-temurin:17-jdk AS runtime
+
+WORKDIR /app
+
+# Copy the built JAR file from the previous stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port Spring Boot runs on
 EXPOSE 8080
 
 # Run the application
