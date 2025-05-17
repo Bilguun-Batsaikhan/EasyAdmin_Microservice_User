@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: your-service-name
+    env: java
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -jar target/your-app.jar
+    plan: free
+    region: oregon
+    branch: develop
