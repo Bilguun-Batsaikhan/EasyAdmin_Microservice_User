@@ -3,7 +3,7 @@ services:
     name: your-service-name
     env: java
     buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -jar target/your-app.jar
+    startCommand: java -jar target/easyadmin-user-0.0.1-SNAPSHOT.jar
     plan: free
     region: oregon
     branch: develop
